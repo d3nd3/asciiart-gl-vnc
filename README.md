@@ -106,4 +106,7 @@ This code above reveals that the X11 method is intended for proxy usage, where n
 By the same creators as VirtualGL, this supports SharedMemory and acts as receiver for the X11 Image Transport method.  Then this will compress the frames to the vncviewers, allowing for collaboration.
 ## :triangular_flag_on_post: ==TightVNC==
 This is an extremely ancient lightweight vncviewer, I like it because its not java based, unlike the turboVNC viewer. So on computers with limitted cpu budget, its handy.
+## :triangular_flag_on_post: ==My Thoughts on Optimal Solution==
+I like the non vnc-viewer edit solutions the best because of the issue where vncviewers do not receive cursor updates correctly from the client App.  Like eg. in FirstPersonShooter games they center the mouse each frame.
 
+## :triangular_flag_on_post: ==The vnc viewer workaround for mouse glitch==
