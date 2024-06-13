@@ -88,7 +88,7 @@ Here, the X server can live across a network and your game can render to it via 
 The x11 game/client will share its images through the X11 supported ways, like Shared Memory/Unix Sockets/Tcp Socket.  
 functions like XFlush and XSync are used to control when they are sent to the server.  [See Here](https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/util/fbx.c#L620), [AndHere](https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/util/fbx.c#L511)  
 Handshake: When an X client connects to an X server, they negotiate capabilities. If both support MIT-SHM, it's usually the preferred method.  
-(SharedMemory)[https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/util/fbx.c#L326]  
+[SharedMemory](https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/util/fbx.c#L326)  
 `XShmAttach, shmctl, XShmCreatePixmap` ..  `VGL_USEXSHM=0 to disable`  
 getFrame() calls f->init(), which uses shm.  
 Obviously SHM has to be a local xserver or xproxy.  
