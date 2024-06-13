@@ -44,6 +44,15 @@ For 32-bit builds, replace the configure line with :
 and obviously get the :i386 package depedencies too.  
 
 Now if you launch an SDL app with `SDL_VIDEODRIVER=aalib ./yourApp` , it will attempt to convert the rendered screen surface into ascii art
+
+## :triangular_flag_on_post: XServer Primer
+DISPLAY= _HOSTNAME_:_SERVER_NUM_ID_._SCREEN_MONITOR_BUFFER_  
+`man 7 X`  
+Each X11 server running on the same machine needs to have a different display number
+
+A display just refers to some X server somewhere.
+
+ "screens" is referring the different virtual monitors (framebuffers) of the X server.
 ## :triangular_flag_on_post: ==VirtualGL==
 So we need to get the pixel buffer that is on the gpu for this to ever work. We have learnt that SDL isn't going to give us what we want. Its down to us to get the pixels from the gpu.  
 
@@ -51,8 +60,49 @@ We could had written a software renderer, or found some SDL Wrapper that alters 
 
 I researched the fastest way to get access to the screen pixels.  `glReadPixels()` is slow because it waits for the gpu to : `flush its pipeline aka finish processing all commands` , During these operations, the CPU must wait for the GPU to complete the data transfer.  So, the solution is : [https://www.khronos.org/opengl/wiki/Pixel_Buffer_Object](https://www.khronos.org/opengl/wiki/Pixel_Buffer_Object) , PBOs allow asynchronous pixel transfer operations. When a PBO is used, glReadPixels() can write pixel data to a buffer object without stalling the CPU. The CPU can then map this buffer to its address space and read the data at a later time, overlapping computation and data transfer.  
 
-So, there we have it, we can write a runtime library that forces the app to render into an off-screen pbuffer instead of on-screen, use the libaa or libcaca and render to X11 or your window manager of choice.  But I didn't want to go down this route because it again involved too much complexity that I wasnt' ready to be involved in.  That is when I discovered virtualGL and learnt that it too is using pbuffers , if I could leverage virtualGL, I wouldn't need to write any code related to them, Super!.  Also, you can learn a lot by looking at virtualGL source code, if you did decide to implement pbuffers yourself.
-## :triangular_flag_on_post: ==TurboVNC==
-## :triangular_flag_on_post: ==TightVNC==
+So, there we have it, we can write a runtime library that forces the app to render into an off-screen pbuffer instead of on-screen, use the libaa or libcaca and render to X11 or your window manager of choice.  But I didn't want to go down this route because it again involved too much complexity that I wasnt' ready to be involved in.  That is when I discovered virtualGL and learnt that it too is using pbuffers , if I could leverage virtualGL, I wouldn't need to write any code related to them, Super!.  Also, you can learn a lot by looking at virtualGL source code, if you did decide to implement pbuffers yourself.  
 
+Another option would be to disable READBACK in virtualGL and just convert to ascii there.  
+Or compile a custom dummy xvfb/vncserver that does nothing but convert to ascii text.  
+Currently my solution is modifying a tight vnc viewer, which is further down the chain.
+
+[virtualGL Docs](https://rawcdn.githack.com/VirtualGL/virtualgl/main/doc/index.html)  
+[virtualGL source](https://github.com/VirtualGL/virtualgl)
+
+### --VirtuaGL Primer--
+VirtualGL is a library that is force-loaded using `LD_PRELOAD` at application runtime, to render your opengl app into pbuffers instead of on-screen ones.   
+
+Once it has the pbuffers it will try to share them to another process.  There are 4 ways it can do this:  
+* VGL Image Transport (Formerly “Direct Mode”)
+* X11 Image Transport (Formerly “Raw Mode”)
+* XV Transport
+* Custom Plugin Transport
+
+`VGL_COMPRESS` environment variable controls which transport is used.  
+or the `-c` option passed to vglrun  
+Every X Server represents a set of screens and input devices, if a Client renders into an Server, the screens attached to that server will show the client. 
+
+#### VGL Image Transport. (JPEG, RGB, YUB) compression
+Here, the X server can live across a network and your game can render to it via the `DISPLAY` environment variable.  The vglclient program will exist on the non-gpu host and act as a receiver of the image frames.  The VirtualGL Client is responsible for decompressing the images and drawing the pixels into the appropriate X window.  So it injects the 3d frames into window that was created over the network.  Notice that it talks over x11 protocol via networks for events.  Its a home-brewed implementation of sending 3d accelerated images over the network with compression.  By injecting like this, each `app` on the server, will generate its own unique window on the client.  This isn't true for the XProxy(vnc) method when 1 vncserver is showing all windows within one window.  You'd have to create multiple vncservers's but this seems unpractical.
+#### X11 Image Transport. no compression
+The x11 game/client will share its images through the X11 supported ways, like Shared Memory/Unix Sockets/Tcp Socket.  
+functions like XFlush and XSync are used to control when they are sent to the server.  [See Here](https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/util/fbx.c#L620), [AndHere](https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/util/fbx.c#L511)  
+Handshake: When an X client connects to an X server, they negotiate capabilities. If both support MIT-SHM, it's usually the preferred method.  
+(SharedMemory)[https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/util/fbx.c#L326]  
+`XShmAttach, shmctl, XShmCreatePixmap` ..  `VGL_USEXSHM=0 to disable`  
+getFrame() calls f->init(), which uses shm.  
+Obviously SHM has to be a local xserver or xproxy.  
+It seems this method can support network too, I guess without compression it is too slow for network? The vnc XProxy is giving the nice compression.  
+Yes I think the default X11 protocol do not support compression!  
+#### XV Transport. transcode YUV420P
+The XV Transport is a special flavor of the X11 Transport that encodes rendered frames as YUV420P and draws them directly to the 2D X server using the X Video extension. This is mainly useful in conjunction with X proxies that support the X Video extension. The idea is that, if the X proxy is going to have to transcode the frame into YUV anyhow, VirtualGL may be faster at doing this, since it has a SIMD-accelerated YUV encoder.
+#### Custom Plugin Transport
+You provide your own. (This could be useful for this project.)
+
+[https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/server/VirtualWin.cpp#L336](https://github.com/VirtualGL/virtualgl/blob/a51eacf49fa5bd017ce0e312b923ae877b2271fd/server/VirtualWin.cpp#L336)  
+This code above reveals that the X11 method is intended for proxy usage, where no compression occurs on the server, that is why it was named `raw`.
+## :triangular_flag_on_post: ==TurboVNC==
+By the same creators as VirtualGL, this supports SharedMemory and acts as receiver for the X11 Image Transport method.  Then this will compress the frames to the vncviewers, allowing for collaboration.
+## :triangular_flag_on_post: ==TightVNC==
+This is an extremely ancient lightweight vncviewer, I like it because its not java based, unlike the turboVNC viewer. So on computers with limitted cpu budget, its handy.
 
