@@ -93,7 +93,7 @@ Handshake: When an X client connects to an X server, they negotiate capabilities
 getFrame() calls f->init(), which uses shm.  
 Obviously SHM has to be a local xserver or xproxy.  
 It seems this method can support network too, I guess without compression it is too slow for network? The vnc XProxy is giving the nice compression.  
-Yes I think the default X11 protocol do not support compression!  
+Yes I think the default X11 protocol do not support compression, that is why VGL_Transport exists, if not using a vnc server.
 #### XV Transport. transcode YUV420P
 The XV Transport is a special flavor of the X11 Transport that encodes rendered frames as YUV420P and draws them directly to the 2D X server using the X Video extension. This is mainly useful in conjunction with X proxies that support the X Video extension. The idea is that, if the X proxy is going to have to transcode the frame into YUV anyhow, VirtualGL may be faster at doing this, since it has a SIMD-accelerated YUV encoder.
 #### Custom Plugin Transport
