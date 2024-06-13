@@ -54,6 +54,7 @@ A display just refers to some X server somewhere.
 
  "screens" is referring the different virtual monitors (framebuffers) of the X server.
 ## :triangular_flag_on_post: ==VirtualGL==
+TLDR: The X11 Transport with TurboVNC is the most popular option.  
 So we need to get the pixel buffer that is on the gpu for this to ever work. We have learnt that SDL isn't going to give us what we want. Its down to us to get the pixels from the gpu.  
 
 We could had written a software renderer, or found some SDL Wrapper that alters the calls to software, but thats either a lot of work or I just could not find such a thing existing.  And it would also decrease performance of the game. So...  
