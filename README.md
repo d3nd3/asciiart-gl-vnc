@@ -73,7 +73,7 @@ Currently my solution is modifying a tight vnc viewer, which is further down the
 ### --VirtuaGL Primer--
 VirtualGL is a library that is force-loaded using `LD_PRELOAD` at application runtime, to render your opengl app into pbuffers instead of on-screen ones.   
 
-Once it has the pbuffers it will try to share them to another process.  There are 4 ways it can do this:  
+Once it has the pbuffers it will try to share them to another system.  There are 4 ways it can do this:  
 * VGL Image Transport (Formerly “Direct Mode”)
 * X11 Image Transport (Formerly “Raw Mode”)
 * XV Transport
