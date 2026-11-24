@@ -1,0 +1,115 @@
+# asciiart-gl-vnc — system overview
+# Research notes only: there is no code in this repo. The diagram maps what the
+# note establishes, and marks the parts that were never built as such.
+# Zones run: entry points -> core -> state / external.
+# Style classes set strokes only, so light and dark stay readable.
+
+title: |md
+  # asciiart-gl-vnc
+  Research notes: getting an OpenGL game's frames out of the GPU and into ASCII over VNC. Design only, no implementation.
+| {near: top-center}
+
+direction: right
+grid-columns: 2
+grid-rows: 2
+horizontal-gap: 140
+vertical-gap: 100
+
+entry: Entry points {
+  direction: down
+
+  read: `README.md` · notes only, no source or build
+  wrong: `SDL_VIDEODRIVER=aalib` / `caca` · SDL 1.2 only
+  want: keys in, ASCII frames out, viewed over VNC
+
+  read -> wrong: the route it started from
+  read -> want: where it ended up
+}
+
+core: Core {
+  direction: right
+  grid-columns: 2
+  grid-rows: 2
+
+  pixels: get the pixels {
+    direction: down
+
+    gpu: vertices go to the GPU, pixels stay there
+    read: `glReadPixels` waits for the pipeline
+    pbo: PBO async readback · map later, overlap CPU/GPU
+
+    gpu -> read: nothing to convert yet
+    read -> pbo: the slow part, solved
+  }
+
+  convert: convert to ASCII {
+    direction: down
+
+    sdl: SDL 1.2 aalib/caca driver · breaks GL flow
+    libs: libaa grey 8-bit · libcaca colour 32-bit
+    driver: the lib's driver decides text or pixels
+
+    sdl -> libs: hook point, `SDL_Flip` -> `aa_flush`
+  }
+
+  reuse: skip the readback {
+    direction: down
+
+    preload: VirtualGL `LD_PRELOAD` renders to pbuffers
+    plugin: Custom Plugin Transport · never written
+
+    preload -> plugin: the slot the note wants
+  }
+
+  view: see it remotely {
+    direction: down
+
+    vnc: patched TightVNC viewer · current pick
+    mouse: FPS games recentre the cursor every frame
+
+    vnc -> mouse: the known defect
+  }
+
+  pixels -> reuse: hand off the frame
+  reuse -> convert: frames arrive as pixels
+  convert -> view: text out
+}
+
+state: State {
+  direction: down
+
+  artefact: `README.md` · the only artefact {shape: cylinder}
+  nothing: no source, no build, no tests, no config files
+  env: `AAOPTS`, `VGL_COMPRESS`, `VGL_USEXSHM`, `DISPLAY` · the libs read these
+}
+
+external: External {
+  direction: down
+
+  sdl12: SDL 1.2 · aalib + caca drivers, gone in SDL 2
+  aalib: libaa · greyscale frame -> ASCII
+  libcaca: libcaca · colour frame -> ASCII
+  vgl: VirtualGL · `vglrun` + pbuffers
+  tvnc: TurboVNC · X11 receiver, then compresses
+  x11: X server · `DISPLAY`, MIT-SHM, XVideo
+  tight: TightVNC viewer · ancient, small, no JVM
+  gpu: vendor GL driver · owns the framebuffer
+
+  tight -> x11: viewer talks X11
+  tvnc -> x11: proxy in front of the server
+  vgl -> x11: X11 / XV transports
+  vgl -> gpu: pbuffers on the GPU
+}
+
+core -> state: what exists
+core -> external: what it would call
+
+style: {
+  fill: transparent
+  stroke-width: 2
+}
+
+entry: {style: {stroke: "#2f6f4e"}}
+core: {style: {stroke: "#2f5f8f"}}
+state: {style: {stroke: "#8a6a2f"}}
+external: {style: {stroke: "#8f3f3f"}}

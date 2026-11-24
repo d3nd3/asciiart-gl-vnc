@@ -1,4 +1,6 @@
 # Ascii Art rendering for Opengl linux games over VNC
+
+Prefer pictures? Start with **[HUMANS.md](HUMANS.md)**.
 ## :triangular_flag_on_post: ==The Objective==
 After being introduced to UnrealTournament libcaca demo, I wanted to test it on other linux 3D games.  However, I was faced with disappointment, if the game does not have an in-built software renderer solution, it would not work.
 ## :triangular_flag_on_post: ==libaa==
